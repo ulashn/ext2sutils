@@ -18,6 +18,10 @@ This code was shared for showing how can we manipulate the filesystem and how ca
 
 ## Usage
 
+From the makefile run these command.
+
+`$ make clean && make all`
+
 **For dup:**
 
 - `$ ./ext2sutils dup FS_IMAGE SOURCE DEST`
