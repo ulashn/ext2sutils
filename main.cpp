@@ -131,32 +131,16 @@ ext2_inode *copyInode(const ext2_inode *rhs)
     newnode->single_indirect = rhs->single_indirect;
     newnode->double_indirect = rhs->double_indirect;
     newnode->triple_indirect = rhs->triple_indirect;
-    //newnode->direct_blocks = new uint32_t[12];
-    //cout << "Copy Inode" << endl;
+
     for (int i = 0; i < 7; i++)
     {
-        /*
-        if (rhs->padding[i])
-        {
-            newnode->padding[i] = 0;
-            //cout << "?" << endl;
-            continue;
-        }*/
         newnode->padding[i] = rhs->padding[i];
     }
     for (int j = 0; j < 12; j++)
     {
-        /*
-        if (rhs->direct_blocks[j])
-        {
-            newnode->direct_blocks[j] = 0;
-            //cout << "???" << endl;
-            continue;
-        }*/
-        //cout << "Direct block " << j << ": " << rhs->direct_blocks[j] << endl;
+
         newnode->direct_blocks[j] = rhs->direct_blocks[j];
     }
-    //cout << "Copy Inode Sonu" << endl;
     return newnode;
 }
 
@@ -234,9 +218,7 @@ void readInode(int fd, int inodeNumber, ext2_inode *temp)
 	*/
     int whichGroup = (inodeNumber - 1) / superBlock.inodes_per_group;
     int localPos = (inodeNumber - 1) % superBlock.inodes_per_group;
-    //cout << "Which group: " << whichGroup << endl;
-    //cout << "Group Position:" << localPos << endl;
-    //printGroupDesc(descs[whichGroup]);
+
     if (blockSize == 1024)
     {
         lseek(fd, OFFSET(descs[whichGroup]->inode_table) + (localPos * sizeof(struct ext2_inode)), SEEK_SET);
@@ -253,13 +235,10 @@ void writeInode(int fd, int inodeNumber, ext2_inode *temp)
     /**
 	 * Write temp pointer data to given inode number
 	*/
-    //cout << "Write ici" << endl;
-    //cout << superBlock.inodes_per_group << endl;
-    //cout << inodeNumber << endl;
+
     int whichGroup = (inodeNumber - 1) / superBlock.inodes_per_group;
     int localPos = (inodeNumber - 1) % superBlock.inodes_per_group;
-    //cout << "WhichGroup: " << whichGroup << endl;
-    //cout << "LocalPos: " << localPos << endl;
+
     if (blockSize == 1024)
     {
         lseek(fd, OFFSET(descs[whichGroup]->inode_table) + (localPos * sizeof(ext2_inode)), SEEK_SET);
@@ -268,7 +247,6 @@ void writeInode(int fd, int inodeNumber, ext2_inode *temp)
     {
         lseek(fd, OFFSET2(descs[whichGroup]->inode_table) + (localPos * sizeof(ext2_inode)), SEEK_SET);
     }
-    //cout << "Tam yazmadan once." << endl;
     write(fd, temp, sizeof(ext2_inode));
 }
 
@@ -288,7 +266,7 @@ void fillBitmap(int groupNo, unsigned char bitmap[])
 
 /**
  * Avaliable bitmaps:
- * - Bulunan inode numarası = (groupcount)*(inode_per_group)+(i+1)
+ * - Found inode number = (groupcount)*(inode_per_group)+(i+1)
 */
 
 void printBitMap(unsigned char bitmap[], unsigned int size)
@@ -326,18 +304,14 @@ int getInodeOfGivenEntryName(char *filename, ext2_inode *searched)
         read(imageFD, blockData, blockSize);
         int currentPosition = 0;
         ext2_dir_entry *thisDir = (ext2_dir_entry *)blockData;
-        //cout << "Length: " << thisDir->length << endl;
-        //cout << "NameLength: " << unsigned(thisDir->name_length) << endl;
-        //cout << "InodeNum: " << thisDir->inode << endl;
+
         while (currentPosition < blockSize)
         {
             // We are searching through the block data
             // If it will exceed we will search the next direct block of inode.
             char entryFilename[EXT2_MAX_NAME_LENGTH + 1];
             memcpy(entryFilename, thisDir->name, unsigned(thisDir->name_length));
-            //cout << "Enrty Filename: " << entryFilename << endl;
             entryFilename[unsigned(thisDir->name_length)] = '\0';
-            //cout << "Gezilen: " << entryFilename << endl;
             // Compare the filenames if they are equal we are done!
             if (strcmp(entryFilename, filename) == 0)
             {
@@ -440,11 +414,7 @@ void incrementBlockRefMap(int blockNum)
     int whichGroup = (blockNum) / superBlock.blocks_per_group;
     int localPos = (blockNum) % superBlock.blocks_per_group;
     int refmapStart = descs[whichGroup]->block_refmap;
-    //cout << "RefmapBlock: " << refmapStart << endl;
-    //cout << "LocalPos:" << localPos << endl;
     uint32_t refMapBlocks[blockSize * 8];
-    //cout << "Refmap olusturuldu" << endl;
-    //cout << "Which group: " << whichGroup << endl;
     if (blockSize == 1024)
     {
         lseek(imageFD, OFFSET(refmapStart), SEEK_SET);
@@ -466,7 +436,6 @@ void incrementBlockRefMap(int blockNum)
         lseek(imageFD, OFFSET2(refmapStart), SEEK_SET);
     }
     write(imageFD, refMapBlocks, 32 * blockSize);
-    //cout << "Refmap Sonu" << endl;
     //delete refMapBlocks;
 }
 
@@ -606,11 +575,9 @@ void deallocateInodeBitMap(int inodeNum)
 
 void allocateInodeBitMap(int inodeNum)
 {
-    //cout << "Inode Number:" << inodeNum << endl;
     superBlock.free_inode_count--;
     int whichGroup = (inodeNum - 1) / superBlock.inodes_per_group;
     int localPos = (inodeNum - 1) % superBlock.inodes_per_group;
-    //cout << "Which group:" << whichGroup << endl;
     descs[whichGroup]->free_inode_count--;
     int bitmapInode = descs[whichGroup]->inode_bitmap;
     unsigned char inodeBMap[blockSize];
@@ -623,7 +590,6 @@ void allocateInodeBitMap(int inodeNum)
         lseek(imageFD, OFFSET2(bitmapInode), SEEK_SET);
     }
     read(imageFD, inodeBMap, blockSize);
-    //cout << "Ilk read" << endl;
     unsigned char bytePos = inodeBMap[(inodeNum - 1) / 8];
     int bitPos = (inodeNum - 1) % 8;
     inodeBMap[(inodeNum - 1) / 8] = bytePos | (1 << bitPos);
@@ -652,24 +618,18 @@ int addDirectoryEntry(ext2_dir_entry *dirEntry, ext2_inode *dirInode, int dirIno
     {
         if (dirInode->direct_blocks[i] == 0)
         {
-            // Yeni block allocate etme işi burda yapılıyor.
             allocated = getFirstFreeBlock();
-            //cout << "Allocated: " << allocated << endl;
             if (blockSize == 1024)
                 incrementBlockRefMap(allocated - 1);
             else
                 incrementBlockRefMap(allocated);
-            //cout << "?" << endl;
             allocateBlockBitMap(allocated);
-            //cout << "?" << endl;
             dirInode->direct_blocks[i] = allocated;
             int blockIncrement = blockSize / 512;
             dirInode->block_count_512 += blockIncrement;
             dirInode->size += blockSize;
             writeInode(imageFD, dirInodeNum, dirInode);
-            //cout << "?" << endl;
             allocationFlag = true;
-            //cout << "?" << endl;
         }
         char blockData[blockSize];
         if (blockSize == 1024)
@@ -688,7 +648,6 @@ int addDirectoryEntry(ext2_dir_entry *dirEntry, ext2_inode *dirInode, int dirIno
 
             if (thisDir->inode == 0 && mySize <= thisDir->length)
             {
-                // Burda ekleme yapılacak
                 thisDir->inode = dirEntry->inode;
                 thisDir->name_length = dirEntry->name_length;
                 thisDir->file_type = dirEntry->file_type;
@@ -708,9 +667,6 @@ int addDirectoryEntry(ext2_dir_entry *dirEntry, ext2_inode *dirInode, int dirIno
             thisSize = round4(thisSize);
             unsigned int bosluk = thisDir->length - thisSize;
 
-            // Arada yeterli boşluk varsa oraya eklenecek
-            // Bi önceki record lengthi ona göre güncellenecek
-            //currentPos += thisSize;
             if (bosluk >= mySize && (currentPos + mySize <= blockSize))
             {
                 unsigned int onceki = thisDir->length;
@@ -739,8 +695,7 @@ int addDirectoryEntry(ext2_dir_entry *dirEntry, ext2_inode *dirInode, int dirIno
                 write(imageFD, blockData, blockSize);
                 return allocated;
             }
-            // Boşluk bulunamadığında
-            // Bir sonraki entrye geç.
+
             currentPos += thisDir->length;
             thisDir = (ext2_dir_entry *)((char *)thisDir + thisDir->length);
         }
@@ -765,9 +720,7 @@ int removeDirectoryEntry(char *filename, ext2_inode *searched)
         read(imageFD, blockData, blockSize);
         int currentPosition = 0;
         ext2_dir_entry *thisDir = (ext2_dir_entry *)blockData;
-        //cout << "Length: " << thisDir->length << endl;
-        //cout << "NameLength: " << unsigned(thisDir->name_length) << endl;
-        //cout << "InodeNum: " << thisDir->inode << endl;
+
         int prevLength = 0;
         while (currentPosition < searched->size)
         {
@@ -775,9 +728,7 @@ int removeDirectoryEntry(char *filename, ext2_inode *searched)
             // If it will exceed we will search the next direct block of inode.
             char entryFilename[EXT2_MAX_NAME_LENGTH + 1];
             memcpy(entryFilename, thisDir->name, unsigned(thisDir->name_length));
-            //cout << "Enrty Filename: " << entryFilename << endl;
             entryFilename[unsigned(thisDir->name_length)] = '\0';
-            //cout << "Gezilen: " << entryFilename << endl;
             // Compare the filenames if they are equal we are done!
             if (strcmp(entryFilename, filename) == 0)
             {
@@ -837,7 +788,6 @@ void removeInode(int inodeNum, ext2_inode *inode)
                 decremented = decrementBlockRefMap(inode->direct_blocks[i]);
             }
 
-            //cout << "Decremented: " << decremented << endl;
             if (decremented == 0)
             {
                 if (blockSize == 1024)
@@ -888,8 +838,6 @@ int main(int argc, char *argv[])
     {
         exit(EXIT_SUCCESS);
     }
-    //printSuperBlock(superBlock);
-    //cout << "Block Size: " << blockSize << endl;
 
     /*
             After reading superblock we will store the all group descriptor informations
@@ -900,17 +848,13 @@ int main(int argc, char *argv[])
         ext2_block_group_descriptor *temp = new ext2_block_group_descriptor;
         readGroupDescriptor(imageFD, temp, i);
         descs.push_back(temp);
-        //printGroupDesc(temp);
     }
     if (strcmp(argv[1], "dup") == 0)
     {
 
-        // Checking given source is inode number or directory.
         if (argv[3][0] == '/')
         {
-            // Source is an absolute path which should be parsed first.
-            // Also should start from the root directory which is inode number 2.
-            // Save it on vector
+
             char delimiter[] = "/";
             char *elems = strtok(argv[3], delimiter);
             while (elems != NULL)
@@ -919,18 +863,14 @@ int main(int argc, char *argv[])
                 elems = strtok(NULL, delimiter);
             }
 
-            // Burda source inode'unu buluyorum.
             ext2_inode *startNode = new ext2_inode;
             int inodeNum = 2;
             readInode(imageFD, inodeNum, startNode);
 
             for (int l = 0; l < sourcePath.size(); l++)
             {
-                //cout << "Searching for: " << sourcePath[l] << endl;
                 inodeNum = getInodeOfGivenEntryName(sourcePath[l], startNode);
-                //cout << "Source Path: " << sourcePath[l] << endl;
-                //cout << "Length: " << strlen(sourcePath[l]) << endl;
-                //cout << "Found inode_number: " << inodeNum << endl;
+
                 if (inodeNum == -1)
                 {
                     cout << "Invalid path!" << endl;
@@ -938,13 +878,10 @@ int main(int argc, char *argv[])
                 }
                 readInode(imageFD, inodeNum, startNode);
             }
-            // StartNode = source inode.
-            // Eger destination' da path ise.
+
             if (argv[4][0] == '/')
             {
 
-                // Parse edip vector'e atadim.
-                // Bu sayede filename ve parent directorysine kolayca erisebilicem
                 ext2_inode *destStartNode = new ext2_inode;
                 readInode(imageFD, 2, destStartNode);
                 char *destElems = strtok(argv[4], delimiter);
@@ -958,9 +895,7 @@ int main(int argc, char *argv[])
                 for (int b = 0; b < destinationPath.size() - 1; b++)
                 {
                     inodeNum2 = getInodeOfGivenEntryName(destinationPath[b], destStartNode);
-                    //cout << "Found inode_number: " << inodeNum2 << endl;
-                    //cout << "Dest Path: " << destinationPath[b] << endl;
-                    //cout << "Length: " << strlen(destinationPath[b]) << endl;
+
                     if (inodeNum2 == -1)
                     {
                         cout << "Invalid path!" << endl;
@@ -972,58 +907,39 @@ int main(int argc, char *argv[])
                 {
                     inodeNum2 = 2;
                 }
-                //cout << "Dest Path: " << destinationPath[destinationPath.size()-1] << endl;
-                //cout << "Length: " << strlen(destinationPath[destinationPath.size()-1]) << endl;
-                //cout << "Dest Path Bulma islemine girmemesi lazım" << endl;
-                // destStartNode kaydedeceğim directory entryi tutan node.
+
                 int freeNodeNum = getFirstFreeInode();
-                //cout << "FreeInode: " << freeNodeNum << endl;
-                // Olusturulan Inode'un bilgilerini kopyaladım.
 
                 ext2_inode *newNode = copyInode(startNode);
-                //cout << "StartNode: " << inodeNum << endl;
-                //cout << "Allocate oncesi" << endl;
-                // Inode Bitmap'de gerekli yer işaretlendi.
+
                 allocateInodeBitMap(freeNodeNum);
                 cout << freeNodeNum << endl;
-                // Gerekli yere yeni oluşturulan inode yazıldı.
 
-                // Gerekli blockların refcount'ları arttırıldı.
-                //cout << "Yazma isleminden sonra" << endl;
                 for (int c = 0; c < 12; c++)
                 {
                     if (newNode->direct_blocks[c] == 0)
                     {
                         continue;
                     }
-                    //cout << "Refmap: " << newNode->direct_blocks[c] << endl;
                     if (blockSize == 1024)
                         incrementBlockRefMap(newNode->direct_blocks[c] - 1);
                     else
                         incrementBlockRefMap(newNode->direct_blocks[c]);
                 }
-                //cout << "Block refmapler ayarlandi. " << endl;
                 ext2_dir_entry *newEntry = new ext2_dir_entry;
-                //cout << "For cikisi" << endl;
                 newEntry->inode = (uint32_t)freeNodeNum;
-                //cout << "Inode num: " << newEntry->inode << endl;
-                //printDestinationPath();
                 newEntry->name_length = static_cast<uint8_t>(strlen(destinationPath[destinationPath.size() - 1]));
                 newEntry->file_type = 1;
-                //cout << "NAME LENGTH: " << unsigned(newEntry->name_length) << endl;
                 for (int a = 0; a < newEntry->name_length; a++)
                 {
                     newEntry->name[a] = destinationPath[destinationPath.size() - 1][a];
                 }
-                //cout << "Add'a giden inode: " << inodeNum2 << endl;
                 int results = addDirectoryEntry(newEntry, destStartNode, inodeNum2, newNode, freeNodeNum);
-                //cout << freeNodeNum << endl;
                 writeInode(imageFD, freeNodeNum, newNode);
                 cout << results << endl;
             }
             else
             {
-                // destination is an inode number.
                 char *destElems = strtok(argv[4], delimiter);
                 while (destElems != NULL)
                 {
@@ -1043,20 +959,17 @@ int main(int argc, char *argv[])
                 {
                     if (newNode->direct_blocks[c] == 0)
                     {
-                        //cout << "Breaked Dest?" << endl;
                         break;
                     }
-                    //cout << "Refmap: " << newNode->direct_blocks[c] << endl;
+                    
                     if (blockSize == 1024)
                         incrementBlockRefMap(newNode->direct_blocks[c] - 1);
                     else
                         incrementBlockRefMap(newNode->direct_blocks[c]);
                 }
                 ext2_dir_entry *newEntry = new ext2_dir_entry;
-                //cout << "For cikisi" << endl;
                 newEntry->inode = (uint32_t)freeNodeNum;
-                //cout << "Inode num: " << newEntry->inode << endl;
-                //printDestinationPath();
+
                 newEntry->name_length = static_cast<uint8_t>(strlen(destinationPath[destinationPath.size() - 1]));
                 newEntry->file_type = 1;
                 for (int a = 0; a < newEntry->name_length; a++)
@@ -1064,7 +977,6 @@ int main(int argc, char *argv[])
                     newEntry->name[a] = destinationPath[destinationPath.size() - 1][a];
                 }
                 int results = addDirectoryEntry(newEntry, destStartNode, destinationNode, newNode, freeNodeNum);
-                //cout << freeNodeNum << endl;
                 cout << results << endl;
             }
         }
@@ -1079,9 +991,6 @@ int main(int argc, char *argv[])
             char delimiter[] = "/";
             if (argv[4][0] == '/')
             {
-
-                // Parse edip vector'e atadim.
-                // Bu sayede filename ve parent directorysine kolayca erisebilicem
                 ext2_inode *destStartNode = new ext2_inode;
                 readInode(imageFD, 2, destStartNode);
                 char *destElems = strtok(argv[4], delimiter);
@@ -1095,9 +1004,7 @@ int main(int argc, char *argv[])
                 for (int b = 0; b < destinationPath.size() - 1; b++)
                 {
                     inodeNum2 = getInodeOfGivenEntryName(destinationPath[b], destStartNode);
-                    //cout << "Found inode_number: " << inodeNum << endl;
-                    //cout << "Dest Path: " << destinationPath[b] << endl;
-                    //cout << "Length: " << strlen(destinationPath[b]) << endl;
+
                     if (inodeNum2 == -1)
                     {
                         cout << "Invalid path!" << endl;
@@ -1105,43 +1012,32 @@ int main(int argc, char *argv[])
                     }
                     readInode(imageFD, inodeNum2, destStartNode);
                 }
-                //cout << "Dest Path: " << destinationPath[destinationPath.size()-1] << endl;
-                //cout << "Length: " << strlen(destinationPath[destinationPath.size()-1]) << endl;
-                //cout << "Dest Path Bulma islemine girmemesi lazım" << endl;
-                // destStartNode kaydedeceğim directory entryi tutan node.
+
                 int freeNodeNum = getFirstFreeInode();
-                //cout << "FreeInode: " << freeNodeNum << endl;
-                // Olusturulan Inode'un bilgilerini kopyaladım.
+
 
                 ext2_inode *newNode = new ext2_inode;
                 newNode = copyInode(startNode);
 
-                //cout << "Allocate oncesi" << endl;
-                // Inode Bitmap'de gerekli yer işaretlendi.
+
                 allocateInodeBitMap(freeNodeNum);
-                //cout << "Burda?" << endl;
-                // Gerekli yere yeni oluşturulan inode yazıldı.
+
                 writeInode(imageFD, freeNodeNum, newNode);
-                // Gerekli blockların refcount'ları arttırıldı.
-                //cout << "Yazma isleminden sonra" << endl;
+
                 for (int c = 0; c < 12; c++)
                 {
                     if (newNode->direct_blocks[c] == 0)
                     {
                         break;
                     }
-                    //cout << "Refmap: " << newNode->direct_blocks[c] << endl;
                     if (blockSize == 1024)
                         incrementBlockRefMap(newNode->direct_blocks[c] - 1);
                     else
                         incrementBlockRefMap(newNode->direct_blocks[c]);
                 }
-                //cout << "Block refmapler ayarlandi. " << endl;
                 ext2_dir_entry *newEntry = new ext2_dir_entry;
-                //cout << "For cikisi" << endl;
                 newEntry->inode = (uint32_t)freeNodeNum;
-                //cout << "Inode num: " << newEntry->inode << endl;
-                //printDestinationPath();
+
                 newEntry->name_length = static_cast<uint8_t>(strlen(destinationPath[destinationPath.size() - 1]));
                 newEntry->file_type = 1;
                 for (int a = 0; a < newEntry->name_length; a++)
@@ -1154,7 +1050,6 @@ int main(int argc, char *argv[])
             }
             else
             {
-                // destination is an inode number.
                 char *destElems = strtok(argv[4], delimiter);
                 while (destElems != NULL)
                 {
@@ -1175,17 +1070,14 @@ int main(int argc, char *argv[])
                     {
                         break;
                     }
-                    //cout << "Refmap: " << newNode->direct_blocks[c] << endl;
                     if (blockSize == 1024)
                         incrementBlockRefMap(newNode->direct_blocks[c] - 1);
                     else
                         incrementBlockRefMap(newNode->direct_blocks[c]);
                 }
                 ext2_dir_entry *newEntry = new ext2_dir_entry;
-                //cout << "For cikisi" << endl;
                 newEntry->inode = (uint32_t)freeNodeNum;
-                //cout << "Inode num: " << newEntry->inode << endl;
-                //printDestinationPath();
+
                 newEntry->name_length = static_cast<uint8_t>(strlen(destinationPath[destinationPath.size() - 1]));
                 newEntry->file_type = 1;
                 for (int a = 0; a < newEntry->name_length; a++)
@@ -1211,7 +1103,6 @@ int main(int argc, char *argv[])
                 elems = strtok(NULL, delimiter);
             }
 
-            // Burda source inode'unu buluyorum.
             ext2_inode *startNode = new ext2_inode;
             int inodeNum = 2;
             readInode(imageFD, inodeNum, startNode);
@@ -1219,11 +1110,8 @@ int main(int argc, char *argv[])
 
             for (int l = 0; l < sourcePath.size(); l++)
             {
-                //cout << "Searching for: " << sourcePath[l] << endl;
                 int inodeNum = getInodeOfGivenEntryName(sourcePath[l], startNode);
-                //cout << "Source Path: " << sourcePath[l] << endl;
-                //cout << "Length: " << strlen(sourcePath[l]) << endl;
-                //cout << "Found inode_number: " << inodeNum << endl;
+
                 if (inodeNum == -1)
                 {
                     cout << "Invalid path!" << endl;
@@ -1240,15 +1128,10 @@ int main(int argc, char *argv[])
             {
                 parentInodeNum = 2;
             }
-            // startNode file'ı gösteren node.
             ext2_inode *parentNode = new ext2_inode;
-            // parentNode belli zaten
             readInode(imageFD, parentInodeNum, parentNode);
             int removedNodeNum = removeDirectoryEntry(sourcePath[sourcePath.size() - 1], parentNode);
-            if (inodeNum != removedNodeNum)
-            {
-                //cout << "Hatali bir eylem gerçeklesti!" << endl;
-            }
+            
             if (startNode->link_count > 1)
             {
                 startNode->link_count -= 1;
@@ -1297,7 +1180,6 @@ int main(int argc, char *argv[])
             ext2_inode *parentInode = new ext2_inode;
             readInode(imageFD, parentInodeNum, parentInode);
             int fileNum = getInodeOfGivenEntryName(sourcePath[1], parentInode);
-            //cout << "sp[1]" << sourcePath[1] << endl;
             readInode(imageFD, fileNum, fileNode);
             int removedNum = removeDirectoryEntry(sourcePath[1], parentInode);
             if (removedNum != fileNum)
