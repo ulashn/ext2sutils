@@ -46,3 +46,14 @@ Example Runs:
 - `$ ./ext2sutils dup example.img /y/2020/hr.avi /y/2021/nostalgia.avi`
 
 **For rm:**
+
+- `./ext2sutils rm FS_IMAGE DEST`
+- `FS_IMAGE` will be a valid ext2s filesystem image.
+- `SOURCE` and `DEST` always refers to regular files same as dup they have possible formats.
+
+
+Example Runs: 
+
+- `$ ./ext2sutils rm fs.img 17/useless.bin`
+- `$ ./ext2sutils rm myfs.img /secret/very_hidden/.sn34ky/keys.txt`
+
